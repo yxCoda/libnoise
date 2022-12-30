@@ -18,10 +18,12 @@ usage
 
 in your own CMakelists.txt
   
-  project(myproj)
+project(myproj)
   
-  find_package(noise 1 REQUIRED NO_MODULE)
-  #it will report an error for not finding noiseConfig.cmake
-  #set the noise_DIR to the directory, "build/install/lib/cmake/noise" by default, then reconfig it
+find_package(noise 1 REQUIRED NO_MODULE)  
 
-  target_link_libraries(my_target PRIVATE noise::noise noise::noiseutils)
+#it will report an error for not finding noiseConfig.cmake  
+
+#set the noise_DIR to the directory, "build/install/lib/cmake/noise" by default, then reconfig it  
+
+target_link_libraries(my_target PRIVATE noise::noise noise::noiseutils)
