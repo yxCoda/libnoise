@@ -1,0 +1,50 @@
+
+# example 1
+add_executable(complexplanet complexplanet.cpp)
+target_link_libraries(complexplanet PRIVATE noise noiseutils)
+set_target_properties(complexplanet PROPERTIES FOLDER examples)
+
+# example 2
+add_executable(texturegranite texturegranite.cpp)
+target_link_libraries(texturegranite PRIVATE noise noiseutils)
+set_target_properties(texturegranite  PROPERTIES FOLDER examples)
+
+# example 3
+add_executable(texturejade texturejade.cpp)
+target_link_libraries(texturejade PRIVATE noise noiseutils)
+set_target_properties(texturejade PROPERTIES FOLDER examples)
+
+# example 4
+add_executable(texturesky texturesky.cpp)
+target_link_libraries(texturesky PRIVATE noise noiseutils)
+set_target_properties(texturesky PROPERTIES FOLDER examples)
+
+# example 5
+add_executable(textureslime textureslime.cpp)
+target_link_libraries(textureslime PRIVATE noise noiseutils)
+set_target_properties(textureslime PROPERTIES FOLDER examples)
+
+# example 6
+add_executable(texturewood texturewood.cpp)
+target_link_libraries(texturewood PRIVATE noise noiseutils)
+set_target_properties(texturewood PROPERTIES FOLDER examples)
+
+if(BUILD_EXAMPLES_WITH_FREEGLUT)
+    find_package(OpenGL REQUIRED)
+
+    # freeglut is required for example 7
+    if(NOT WIN32)
+        find_package(freeglut REQUIRED)
+    else()
+        add_subdirectory(freeglut)
+    endif()
+
+    # example 7
+    add_executable(worms worms.cpp)
+    target_link_libraries(worms PRIVATE noise noiseutils freeglut OpenGL::GL OpenGL::GLU)
+    set_target_properties(worms PROPERTIES FOLDER examples)
+
+    if(NOT BUILD_SHARED_LIBS)
+        target_compile_definitions(worms PRIVATE FREEGLUT_STATIC)
+    endif()
+endif()

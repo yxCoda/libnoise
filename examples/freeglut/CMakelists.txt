@@ -1,0 +1,129 @@
+
+if(NOT WIN32 OR NOT MSVC)
+	message(FATAL_ERROR "This freeglut only supports MSVC and WIN32!")
+endif()
+
+set(FREEGLUT_HEADERS
+	include/GL/freeglut.h
+	include/GL/freeglut_ucall.h
+	include/GL/freeglut_ext.h
+	include/GL/freeglut_std.h
+	include/GL/glut.h)
+
+set(FREEGLUT_SRCS
+    src/fg_callbacks.c
+    src/fg_cursor.c
+    src/fg_display.c
+    src/fg_ext.c
+    src/fg_font_data.c
+    src/fg_gamemode.c
+    src/fg_geometry.c
+    src/fg_gl2.c
+    src/fg_gl2.h
+    src/fg_init.c
+    src/fg_init.h
+    src/fg_internal.h
+    src/fg_callback_macros.h
+    src/fg_input_devices.c
+    src/fg_joystick.c
+    src/fg_main.c
+    src/fg_misc.c
+    src/fg_overlay.c
+    src/fg_spaceball.c
+    src/fg_state.c
+    src/fg_stroke_mono_roman.c
+    src/fg_stroke_roman.c
+    src/fg_structure.c
+    src/fg_teapot.c
+    src/fg_teapot_data.h
+    src/fg_videoresize.c
+    src/fg_window.c)
+
+LIST(APPEND FREEGLUT_SRCS
+        src/fg_font.c
+        src/fg_menu.c)
+
+IF(WIN32)
+    LIST(APPEND FREEGLUT_SRCS
+        src/mswin/fg_cursor_mswin.c
+        src/mswin/fg_display_mswin.c
+        src/mswin/fg_ext_mswin.c
+        src/mswin/fg_gamemode_mswin.c
+        src/mswin/fg_init_mswin.c
+        src/mswin/fg_internal_mswin.h
+        src/mswin/fg_input_devices_mswin.c
+        src/mswin/fg_joystick_mswin.c
+        src/mswin/fg_main_mswin.c
+        src/mswin/fg_menu_mswin.c
+        src/mswin/fg_spaceball_mswin.c
+        src/mswin/fg_state_mswin.c
+        src/mswin/fg_structure_mswin.c
+        src/mswin/fg_window_mswin.c
+        src/mswin/fg_cmap_mswin.c)
+endif()
+
+include(CheckIncludeFiles)
+INCLUDE(CheckFunctionExists)
+INCLUDE(CheckTypeSize)
+INCLUDE(CheckCCompilerFlag)
+
+CHECK_INCLUDE_FILES(sys/types.h HAVE_SYS_TYPES_H)
+CHECK_INCLUDE_FILES(unistd.h 	HAVE_UNISTD_H)
+CHECK_INCLUDE_FILES(sys/time.h 	HAVE_SYS_TIME_H)
+CHECK_INCLUDE_FILES(stdbool.h 	HAVE_STDBOOL_H)
+CHECK_INCLUDE_FILES(sys/param.h HAVE_SYS_PARAM_H)
+CHECK_INCLUDE_FILES(sys/ioctl.h HAVE_SYS_IOCTL_H)
+CHECK_INCLUDE_FILES(fcntl.h 	HAVE_FCNTL_H)
+CHECK_INCLUDE_FILES(usbhid.h 	HAVE_USBHID_H)
+CHECK_FUNCTION_EXISTS(gettimeofday HAVE_GETTIMEOFDAY)
+CHECK_FUNCTION_EXISTS(XParseGeometry   HAVE_XPARSEGEOMETRY)
+IF (NOT HAVE_XPARSEGEOMETRY)
+   LIST(APPEND FREEGLUT_SRCS
+        src/util/xparsegeometry_repl.c
+        src/util/xparsegeometry_repl.h)
+   set(NEED_XPARSEGEOMETRY_IMPL TRUE)
+ENDIF()
+# decide on suitable type for internal time keeping, 64-bit if possible
+CHECK_INCLUDE_FILES(stdint.h    HAVE_STDINT_H)
+CHECK_INCLUDE_FILES(inttypes.h  HAVE_INTTYPES_H)
+IF (NOT (HAVE_STDINT_H OR HAVE_INTTYPES_H))
+    IF (MSVC)
+        # Some old Microsoft VC releases don't support unsigned long
+        # long, but all we care about is support for unsigned __int64 on
+        # MSVC, so test for presence of that type
+        CHECK_TYPE_SIZE("unsigned __int64" U__INT64 BUILTIN_TYPES_ONLY)
+    ELSEIF()
+        CHECK_TYPE_SIZE("unsigned long long" ULONG_LONG BUILTIN_TYPES_ONLY)
+    ENDIF()
+ENDIF()
+
+# The generated config.h is placed in the project's build directory, just to
+# ensure that all CMake-generated files are kept away from the main source tree.
+# As a result, the build directory must to be added to the include path list.
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/config.h.in ${CMAKE_BINARY_DIR}/config.h)
+
+add_library(freeglut ${FREEGLUT_SRCS})
+
+target_compile_definitions(freeglut PRIVATE -DHAVE_CONFIG_H)
+target_include_directories(freeglut PRIVATE ${CMAKE_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+target_sources(freeglut PUBLIC
+	FILE_SET HEADERS
+	BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include
+	FILES ${FREEGLUT_HEADERS})
+
+IF(WIN32)
+	if(BUILD_SHARED_LIBS)
+		target_compile_definitions(freeglut PRIVATE FREEGLUT_EXPORTS)
+	else()
+		target_compile_definitions(freeglut PRIVATE FREEGLUT_STATIC)
+		set_target_properties(freeglut PROPERTIES OUTPUT_NAME freeglut_static)
+	endif()
+	# minimum system requirement for WM_TOUCH device
+	# Windows 7 - 0x601
+    target_compile_definitions(freeglut PRIVATE -D_WIN32_WINNT=0x0601)
+    target_compile_definitions(freeglut PRIVATE -DWINVER=0x0601)
+endif()
+
+target_link_libraries(freeglut PRIVATE OpenGL::GL OpenGL::GLU)
+set_target_properties(freeglut PROPERTIES FOLDER 3rdparty)

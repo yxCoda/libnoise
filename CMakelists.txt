@@ -1,0 +1,84 @@
+cmake_minimum_required(VERSION 3.23.0 FATAL_ERROR)
+
+project(noise VERSION 1.0.0 LANGUAGES CXX C)
+
+SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
+SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
+SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
+
+set(CMAKE_CXX_STANDARD 11)
+
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+
+SET(CMAKE_DEBUG_POSTFIX "d")
+
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+  set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "..." FORCE)
+endif()
+
+option(BUILD_SHARED_LIBS "build shared libs" OFF)
+option(BUILD_EXAMPLES "build examples or not" ON)
+option(BUILD_EXAMPLES_WITH_FREEGLUT "build examples that requires freeglut" ON)
+
+#######################################################################
+
+file(GLOB SOURCES noise/src/*.cpp noise/src/model/*.cpp noise/src/module/*.cpp)
+file(GLOB HEADERS noise/src/*.h noise/src/model/*.h noise/src/module/*.h)
+
+add_library(noise)
+
+target_sources(noise PRIVATE ${SOURCES})
+
+target_sources(noise PUBLIC
+	FILE_SET HEADERS
+	BASE_DIRS ${CMAKE_SOURCE_DIR}/noise/src
+	FILES ${HEADERS})
+
+###############################################################
+
+add_library(noiseutils)
+
+target_sources(noiseutils PRIVATE noiseutils/noiseutils.cpp)
+
+target_sources(noiseutils PUBLIC
+	FILE_SET HEADERS
+	BASE_DIRS ${CMAKE_SOURCE_DIR}/noiseutils
+	FILES noiseutils/noiseutils.h)
+
+target_link_libraries(noiseutils PUBLIC noise)
+
+###############################################################
+
+if(BUILD_EXAMPLES)
+	add_subdirectory(examples)
+endif()
+
+###############################################################
+
+install(TARGETS noise noiseutils
+	EXPORT noiseTargets
+	FILE_SET HEADERS DESTINATION include/noise
+	LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION bin
+    INCLUDES DESTINATION include)
+
+install(EXPORT noiseTargets
+    FILE noiseTargets.cmake
+    NAMESPACE noise::
+    DESTINATION lib/cmake/noise)
+
+include(CMakePackageConfigHelpers)
+
+write_basic_package_version_file(
+    "noiseConfigVersion.cmake"
+    VERSION ${VERSION}
+    COMPATIBILITY AnyNewerVersion)
+
+install(FILES 
+	"cmake/noiseConfig.cmake" 
+	"${CMAKE_CURRENT_BINARY_DIR}/noiseConfigVersion.cmake"
+    DESTINATION lib/cmake/noise)
+
